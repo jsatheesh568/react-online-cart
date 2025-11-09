@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockProducts } from '../data/mockData';
 import './ProductsPage.css';
 
-function ProductsPage({ cart, addToCart }) {
+function ProductsPage({ cart, addToCart, products }) {
   const navigate = useNavigate();
   const [quantities, setQuantities] = useState({});
 
   const handleQuantityChange = (productId, change) => {
-    const product = mockProducts.find(p => p.id === productId);
+    const product = products.find(p => p.id === productId);
     const currentQty = quantities[productId] || 0;
     const newQty = Math.max(0, Math.min(product.stock, currentQty + change));
     
@@ -20,9 +19,17 @@ function ProductsPage({ cart, addToCart }) {
 
   const handleAddToCart = (product) => {
     const quantity = quantities[product.id] || 0;
+    
     if (quantity > 0) {
+      if (quantity > product.stock) {
+        alert(`Only ${product.stock} units available in stock!`);
+        return;
+      }
+      
       addToCart(product, quantity);
       alert(`${quantity} x ${product.name} added to cart!`);
+      
+      // Reset quantity input
       setQuantities({
         ...quantities,
         [product.id]: 0
@@ -49,7 +56,7 @@ function ProductsPage({ cart, addToCart }) {
       </header>
 
       <div className="products-grid">
-        {mockProducts.map(product => (
+        {products.map(product => (
           <div key={product.id} className="product-card">
             <img src={product.image} alt={product.name} className="product-image" />
             
@@ -57,7 +64,7 @@ function ProductsPage({ cart, addToCart }) {
               <h3>{product.name}</h3>
               <p className="product-description">{product.description}</p>
               <p className="product-price">₹{product.price.toLocaleString()}</p>
-              <p className="product-stock">
+              <p className="product-stock" style={{ color: product.stock === 0 ? '#dc3545' : '#28a745' }}>
                 Stock Available: <strong>{product.stock} units</strong>
               </p>
               
@@ -73,7 +80,7 @@ function ProductsPage({ cart, addToCart }) {
                 </span>
                 <button 
                   onClick={() => handleQuantityChange(product.id, 1)}
-                  disabled={quantities[product.id] >= product.stock}
+                  disabled={quantities[product.id] >= product.stock || product.stock === 0}
                 >
                   +
                 </button>
@@ -82,8 +89,13 @@ function ProductsPage({ cart, addToCart }) {
               <button 
                 className="add-to-cart-btn"
                 onClick={() => handleAddToCart(product)}
+                disabled={product.stock === 0}
+                style={{ 
+                  opacity: product.stock === 0 ? 0.5 : 1,
+                  cursor: product.stock === 0 ? 'not-allowed' : 'pointer'
+                }}
               >
-                Add to Cart
+                {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
               </button>
             </div>
           </div>
